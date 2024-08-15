@@ -25,8 +25,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class PlayerJoinQuitListener implements Listener {
@@ -37,60 +39,56 @@ public class PlayerJoinQuitListener implements Listener {
     public void onJoin(final PlayerJoinEvent event) {
         final Player player = event.getPlayer();
 
-        DataManager.loadPlayerDataAsync(player, data -> {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                final Map<String, Object> result = DataManager.getPlayerData(player);
 
-            User user = UserHandler.addUser(
-                    new User(
-                            player,
-                            data
-                    )
-            );
+                User user = UserHandler.addUser(
+                        new User(
+                                player,
+                                result
+                        )
+                );
 
-            final Set<RewardType> availableRewards = user.getAvailableRewards();
-            if (availableRewards.isEmpty()) {
-                return;
-            }
-
-            if (!Hook.isAuthUsed()) {
-                if (DailyRewardsPlugin.getRewardManager().processAutoClaimForUser(user)) {
+                final Set<RewardType> availableRewards = user.getAvailableRewards();
+                if (availableRewards.isEmpty()) {
                     return;
                 }
-            }
 
-            if (!PermissionUtil.hasPermission(player, PermissionUtil.Permission.JOIN_NOTIFICATION_SETTING)) {
-                return;
-            }
-
-            if (!user.hasSettingEnabled(Setting.JOIN_NOTIFICATION)) {
-                return;
-            }
-
-            ReminderReceiveEvent reminderReceiveEvent = new ReminderReceiveEvent(player, availableRewards);
-            Bukkit.getPluginManager().callEvent(reminderReceiveEvent);
-
-            if (reminderReceiveEvent.isCancelled()) {
-                return;
-            }
-
-            DailyRewardsPlugin.get().runDelayed(() -> {
-                PlayerUtil.playSound(player, Config.JOIN_NOTIFICATION_SOUND.asString());
-                for (String line : Lang.JOIN_NOTIFICATION.asReplacedList(new HashMap<String, String>() {{
-                    put("%player%", player.getName());
-                    put("%rewards%", String.valueOf(availableRewards.size()));
-                }})) {
-                    BaseComponent[] msg = TextComponent.fromLegacyText(line);
-
-                    for (BaseComponent bc : msg) {
-                        if (!VersionUtil.isLegacyVersion()) bc.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Lang.JOIN_HOVER_MESSAGE.asColoredString(player))));
-                        bc.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, Config.JOIN_NOTIFICATION_COMMAND.asString().replace("%player%", player.getName())));
+                if (!Hook.isAuthUsed()) {
+                    if (DailyRewardsPlugin.getRewardManager().processAutoClaimForUser(user)) {
+                        return;
                     }
-
-                    player.spigot().sendMessage(msg);
                 }
 
-            }, Config.JOIN_NOTIFICATION_DELAY.asInt() * 20L);
+                if (!PermissionUtil.hasPermission(player, PermissionUtil.Permission.JOIN_NOTIFICATION_SETTING)) {
+                    return;
+                }
 
-        });
+                if (!user.hasSettingEnabled(Setting.JOIN_NOTIFICATION)) {
+                    return;
+                }
+
+                DailyRewardsPlugin.get().runDelayed(() -> {
+                    PlayerUtil.playSound(player, Config.JOIN_NOTIFICATION_SOUND.asString());
+                    for (String line : Lang.JOIN_NOTIFICATION.asReplacedList(new HashMap<String, String>() {{
+                        put("%player%", player.getName());
+                        put("%rewards%", String.valueOf(availableRewards.size()));
+                    }})) {
+                        BaseComponent[] msg = TextComponent.fromLegacyText(line);
+
+                        for (BaseComponent bc : msg) {
+                            if (!VersionUtil.isLegacyVersion()) bc.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Lang.JOIN_HOVER_MESSAGE.asColoredString(player))));
+                            bc.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, Config.JOIN_NOTIFICATION_COMMAND.asString().replace("%player%", player.getName())));
+                        }
+
+                        player.spigot().sendMessage(msg);
+                    }
+
+                }, Config.JOIN_NOTIFICATION_DELAY.asInt() * 20L);
+            }
+        }.runTaskAsynchronously(DailyRewardsPlugin.get());
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)

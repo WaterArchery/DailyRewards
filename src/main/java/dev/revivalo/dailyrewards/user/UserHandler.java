@@ -1,7 +1,9 @@
 package dev.revivalo.dailyrewards.user;
 
+import dev.revivalo.dailyrewards.DailyRewardsPlugin;
 import dev.revivalo.dailyrewards.configuration.data.DataManager;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -30,7 +32,13 @@ public final class UserHandler {
     public static void removeUser(final UUID uuid){
         final User user = usersHashMap.remove(uuid);
 
-        if (user != null)
-            DataManager.updateValues(uuid, user, user.getData());
+        if (user != null) {
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    DataManager.updateValues(uuid, user, user.getData());
+                }
+            }.runTaskAsynchronously(DailyRewardsPlugin.get());
+        }
     }
 }

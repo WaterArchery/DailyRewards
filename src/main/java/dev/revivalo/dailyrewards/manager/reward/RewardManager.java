@@ -22,6 +22,8 @@ public class RewardManager {
     }
 
     public boolean processAutoClaimForUser(User user) {
+        if (user == null) return false;
+
         if (!user.hasSettingEnabled(Setting.AUTO_CLAIM)) {
             return false;
         }

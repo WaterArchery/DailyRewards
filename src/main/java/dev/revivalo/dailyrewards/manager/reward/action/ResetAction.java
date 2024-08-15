@@ -1,5 +1,6 @@
 package dev.revivalo.dailyrewards.manager.reward.action;
 
+import dev.revivalo.dailyrewards.DailyRewardsPlugin;
 import dev.revivalo.dailyrewards.configuration.data.DataManager;
 import dev.revivalo.dailyrewards.configuration.file.Lang;
 import dev.revivalo.dailyrewards.manager.reward.RewardType;
@@ -10,6 +11,7 @@ import dev.revivalo.dailyrewards.user.UserHandler;
 import dev.revivalo.dailyrewards.util.PermissionUtil;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,17 +55,22 @@ public class ResetAction implements RewardAction<String> {
             }
         }
 
-        boolean updated = DataManager.updateValues(
-                offlinePlayer.getUniqueId(),
-                UserHandler.getUser(offlinePlayer.getPlayer()),
-                changes
-        );
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                boolean updated = DataManager.updateValues(
+                        offlinePlayer.getUniqueId(),
+                        UserHandler.getUser(offlinePlayer.getPlayer()),
+                        changes
+                );
 
-        if (updated) {
-            executor.sendMessage(Lang.REWARD_RESET.asColoredString().replace("%type%", typeString).replace("%player%", offlinePlayer.getName()));
-        } else {
-            executor.sendMessage(Lang.UNAVAILABLE_PLAYER.asColoredString().replace("%player%", offlinePlayer.getName()));
-        }
+                if (updated) {
+                    executor.sendMessage(Lang.REWARD_RESET.asColoredString().replace("%type%", typeString).replace("%player%", offlinePlayer.getName()));
+                } else {
+                    executor.sendMessage(Lang.UNAVAILABLE_PLAYER.asColoredString().replace("%player%", offlinePlayer.getName()));
+                }
+            }
+        }.runTaskAsynchronously(DailyRewardsPlugin.get());
 
         return ActionResponse.Type.PROCEEDED;
     }

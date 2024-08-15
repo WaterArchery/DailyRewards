@@ -19,9 +19,9 @@ public class MySQLManager {
 
 	private static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS Rewards(id varchar(255), daily long, weekly long, monthly long);";
 	private static final String ADD_REWARD_COLUMN = "ALTER TABLE Rewards ADD COLUMN `%column%` int DEFAULT %default%;";
-	private static final String SELECT = "SELECT %value% FROM Rewards WHERE id='%selector%';";
+	private static final String SELECT = "SELECT %value% FROM Rewards WHERE id = '%selector%';";
 	private static final String INSERT = "INSERT INTO Rewards (%columns%) VALUES (%values%);";
-	private static final String UPDATE = "UPDATE Rewards SET %values% WHERE id='%selector%';";
+	private static final String UPDATE = "UPDATE Rewards SET %values% WHERE id = '%selector%';";
 
 	private static HikariDataSource dataSource;
 

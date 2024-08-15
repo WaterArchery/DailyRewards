@@ -6,6 +6,7 @@ import dev.revivalo.dailyrewards.manager.Setting;
 import dev.revivalo.dailyrewards.manager.cooldown.Cooldown;
 import dev.revivalo.dailyrewards.manager.reward.RewardType;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,19 +63,30 @@ public class User {
      */
     public boolean toggleSetting(Setting setting, boolean set) {
         data.put(setting.getTag(), set ? "1" : "0");
-        DataManager.updateValues(
-                player.getUniqueId(),
-                this,
-                new HashMap<String, Object>() {{
-                    put(setting.getTag(), hasSettingEnabled(setting) ? 1L : 0);
-                }}
-        );
+        User user = this;
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                DataManager.updateValues(
+                        player.getUniqueId(),
+                        user,
+                        new HashMap<String, Object>() {{
+                            put(setting.getTag(), hasSettingEnabled(setting) ? 1L : 0);
+                        }}
+                );
+            }
+        }.runTaskAsynchronously(DailyRewardsPlugin.get());
 
         return set;
     }
 
     public boolean hasSettingEnabled(Setting setting) {
-        return 1 == Long.parseLong(String.valueOf(data.get(setting.getTag())));
+        if (setting == null) return false;
+        String value = String.valueOf(data.get(setting.getTag()));
+        if (value == null || value.equalsIgnoreCase("null")) return false;
+
+        return 1 == Long.parseLong(value);
     }
 
     public void updateData(Map<String, Object> changes) {

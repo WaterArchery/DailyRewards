@@ -169,7 +169,7 @@ public final class DailyRewardsPlugin extends JavaPlugin {
     }
 
     public void runDelayed(Runnable runnable, long delay) {
-        getScheduler().runTaskLater(this, runnable, delay);
+        getScheduler().runTaskLaterAsynchronously(this, runnable, delay);
     }
 
     @SuppressWarnings("unused")
